@@ -62,6 +62,11 @@ class UserRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def list_users(self) -> list[User]:
+        """List all users, ordered with admins first."""
+        raise NotImplementedError
+
+    @abstractmethod
     async def update_user(self, user: User) -> User:
         """Update an existing user.
 

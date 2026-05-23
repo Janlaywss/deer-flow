@@ -215,6 +215,7 @@ class SkillStorage(ABC):
         Origin: ``deerflow.skills.loader.load_skills``.
         """
         from deerflow.skills.parser import parse_skill_file
+        from deerflow.skills.policy import is_hidden_skill_name
 
         skills_by_name: dict[str, Skill] = {}
         for category, category_root, md_path in self._iter_skill_files():
@@ -223,7 +224,7 @@ class SkillStorage(ABC):
                 category=category,
                 relative_path=md_path.parent.relative_to(category_root),
             )
-            if skill:
+            if skill and not is_hidden_skill_name(skill.name):
                 skills_by_name[skill.name] = skill
 
         skills = list(skills_by_name.values())

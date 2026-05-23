@@ -8,7 +8,7 @@ minutes -- we don't hold connections across long execution.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, time, timedelta
 from typing import Any
 
 from sqlalchemy import func, select, update
@@ -350,3 +350,43 @@ class RunRepository(RunStore):
                 "middleware": middleware,
             },
         }
+
+    async def aggregate_daily_tokens_by_user(self, user_id: str, *, days: int) -> list[dict[str, Any]]:
+        """Aggregate one user's token usage by UTC date and model."""
+        start_date = datetime.now(UTC).date() - timedelta(days=days - 1)
+        start_at = datetime.combine(start_date, time.min, tzinfo=UTC)
+        model_name = func.coalesce(RunRow.model_name, "unknown")
+        run_day = func.date(RunRow.created_at)
+
+        stmt = (
+            select(
+                run_day.label("date"),
+                model_name.label("model"),
+                func.count().label("runs"),
+                func.coalesce(func.sum(RunRow.total_tokens), 0).label("total_tokens"),
+                func.coalesce(func.sum(RunRow.total_input_tokens), 0).label("total_input_tokens"),
+                func.coalesce(func.sum(RunRow.total_output_tokens), 0).label("total_output_tokens"),
+            )
+            .where(
+                RunRow.user_id == user_id,
+                RunRow.status.in_(("success", "error")),
+                RunRow.created_at >= start_at,
+            )
+            .group_by(run_day, model_name)
+            .order_by(run_day, model_name)
+        )
+
+        async with self._sf() as session:
+            rows = (await session.execute(stmt)).all()
+
+        return [
+            {
+                "date": row.date.isoformat() if hasattr(row.date, "isoformat") else str(row.date),
+                "model": row.model,
+                "runs": row.runs,
+                "total_tokens": row.total_tokens,
+                "total_input_tokens": row.total_input_tokens,
+                "total_output_tokens": row.total_output_tokens,
+            }
+            for row in rows
+        ]

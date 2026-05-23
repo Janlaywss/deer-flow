@@ -1,4 +1,4 @@
-import { buildLoginUrl } from "@/core/auth/types";
+import { buildLoginUrl, parseAuthError } from "@/core/auth/types";
 
 /** HTTP methods that the gateway's CSRFMiddleware checks. */
 export type StateChangingMethod = "POST" | "PUT" | "DELETE" | "PATCH";
@@ -81,8 +81,18 @@ export async function fetch(
   });
 
   if (res.status === 401) {
-    window.location.href = buildLoginUrl(window.location.pathname);
-    throw new Error("Unauthorized");
+    const authError = parseAuthError(
+      await res
+        .clone()
+        .json()
+        .catch(() => null),
+    );
+    const loginUrl = buildLoginUrl(window.location.pathname);
+    window.location.href =
+      authError.code === "account_disabled"
+        ? `${loginUrl}&disabled=1`
+        : loginUrl;
+    throw new Error(authError.message);
   }
 
   return res;

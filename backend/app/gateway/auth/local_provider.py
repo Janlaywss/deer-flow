@@ -87,6 +87,10 @@ class LocalAuthProvider(AuthProvider):
         """Get user by OAuth provider and ID."""
         return await self._repo.get_user_by_oauth(provider, oauth_id)
 
+    async def list_users(self) -> list[User]:
+        """List all users."""
+        return await self._repo.list_users()
+
     async def count_users(self) -> int:
         """Return total number of registered users."""
         return await self._repo.count_users()

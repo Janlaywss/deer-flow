@@ -113,6 +113,21 @@ class RegisterRequest(BaseModel):
     _strong_password = field_validator("password")(classmethod(lambda cls, v: _validate_strong_password(v)))
 
 
+class CreateUserRequest(BaseModel):
+    """Request model for admin-created user accounts."""
+
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+
+    _strong_password = field_validator("password")(classmethod(lambda cls, v: _validate_strong_password(v)))
+
+
+class UpdateUserStatusRequest(BaseModel):
+    """Request model for enabling or disabling a user account."""
+
+    is_disabled: bool
+
+
 class ChangePasswordRequest(BaseModel):
     """Request model for password change (also handles setup flow)."""
 
@@ -129,6 +144,12 @@ class MessageResponse(BaseModel):
     message: str
 
 
+class UserListResponse(BaseModel):
+    """Response model for the admin user list endpoint."""
+
+    users: list[UserResponse]
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────
 
 
@@ -143,6 +164,17 @@ def _set_session_cookie(response: Response, token: str, request: Request) -> Non
         secure=is_https,
         samesite="lax",
         max_age=config.token_expiry_days * 24 * 3600 if is_https else None,
+    )
+
+
+def _user_response(user) -> UserResponse:
+    """Serialize an internal user for auth API responses."""
+    return UserResponse(
+        id=str(user.id),
+        email=user.email,
+        system_role=user.system_role,
+        needs_setup=user.needs_setup,
+        is_disabled=user.is_disabled,
     )
 
 
@@ -292,6 +324,12 @@ async def login_local(
             detail=AuthErrorResponse(code=AuthErrorCode.INVALID_CREDENTIALS, message="Incorrect email or password").model_dump(),
         )
 
+    if user.is_disabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=AuthErrorResponse(code=AuthErrorCode.ACCOUNT_DISABLED, message="您的账号已被禁用").model_dump(),
+        )
+
     _record_login_success(client_ip)
     token = create_access_token(str(user.id), token_version=user.token_version)
     _set_session_cookie(response, token, request)
@@ -320,7 +358,7 @@ async def register(request: Request, response: Response, body: RegisterRequest):
     token = create_access_token(str(user.id), token_version=user.token_version)
     _set_session_cookie(response, token, request)
 
-    return UserResponse(id=str(user.id), email=user.email, system_role=user.system_role)
+    return _user_response(user)
 
 
 @router.post("/logout", response_model=MessageResponse)
@@ -380,7 +418,67 @@ async def change_password(request: Request, response: Response, body: ChangePass
 async def get_me(request: Request):
     """Get current authenticated user info."""
     user = await get_current_user_from_request(request)
-    return UserResponse(id=str(user.id), email=user.email, system_role=user.system_role, needs_setup=user.needs_setup)
+    return _user_response(user)
+
+
+@router.get("/users", response_model=UserListResponse)
+async def list_users(request: Request):
+    """List all DeerFlow users. Admin users only."""
+    current_user = await get_current_user_from_request(request)
+    if current_user.system_role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    users = await get_local_provider().list_users()
+    return UserListResponse(users=[_user_response(user) for user in users])
+
+
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(request: Request, body: CreateUserRequest):
+    """Create a regular DeerFlow user. Admin users only."""
+    current_user = await get_current_user_from_request(request)
+    if current_user.system_role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    try:
+        user = await get_local_provider().create_user(email=body.email, password=body.password, system_role="user")
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=AuthErrorResponse(code=AuthErrorCode.EMAIL_ALREADY_EXISTS, message="Email already registered").model_dump(),
+        )
+
+    return _user_response(user)
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse)
+async def update_user_status(request: Request, user_id: str, body: UpdateUserStatusRequest):
+    """Enable or disable a DeerFlow user account. Admin users only."""
+    provider = get_local_provider()
+    current_user = await get_current_user_from_request(request)
+    if current_user.system_role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    target_user = await provider.get_user(user_id)
+    if target_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=AuthErrorResponse(code=AuthErrorCode.USER_NOT_FOUND, message="User not found").model_dump(),
+        )
+
+    if str(current_user.id) == str(target_user.id) and body.is_disabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot disable your own account")
+
+    if target_user.system_role == "admin" and not target_user.is_disabled and body.is_disabled:
+        active_admin_count = sum(1 for user in await provider.list_users() if user.system_role == "admin" and not user.is_disabled)
+        if active_admin_count <= 1:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot disable the last active admin")
+
+    if target_user.is_disabled != body.is_disabled:
+        target_user.is_disabled = body.is_disabled
+        target_user.token_version += 1
+        target_user = await provider.update_user(target_user)
+
+    return _user_response(target_user)
 
 
 # Per-IP cache: ip → (timestamp, result_dict).
@@ -489,7 +587,7 @@ async def initialize_admin(request: Request, response: Response, body: Initializ
     token = create_access_token(str(user.id), token_version=user.token_version)
     _set_session_cookie(response, token, request)
 
-    return UserResponse(id=str(user.id), email=user.email, system_role=user.system_role)
+    return _user_response(user)
 
 
 # ── OAuth Endpoints (Future/Placeholder) ─────────────────────────────────

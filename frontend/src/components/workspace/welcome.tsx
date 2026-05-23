@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
 import { useI18n } from "@/core/i18n/hooks";
@@ -18,7 +17,6 @@ export function Welcome({
   mode?: "ultra" | "pro" | "thinking" | "flash";
 }) {
   const { t } = useI18n();
-  const searchParams = useSearchParams();
   const isUltra = useMemo(() => mode === "ultra", [mode]);
   const colors = useMemo(() => {
     if (isUltra) {
@@ -37,28 +35,14 @@ export function Welcome({
       )}
     >
       <div className="text-2xl font-bold">
-        {searchParams.get("mode") === "skill" ? (
-          `✨ ${t.welcome.createYourOwnSkill} ✨`
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className={cn("inline-block", !waved ? "animate-wave" : "")}>
-              {isUltra ? "🚀" : "👋"}
-            </div>
-            <AuroraText colors={colors}>{t.welcome.greeting}</AuroraText>
+        <div className="flex items-center gap-2">
+          <div className={cn("inline-block", !waved ? "animate-wave" : "")}>
+            {isUltra ? "🚀" : "👋"}
           </div>
-        )}
-      </div>
-      {searchParams.get("mode") === "skill" ? (
-        <div className="text-muted-foreground text-sm">
-          {t.welcome.createYourOwnSkillDescription.includes("\n") ? (
-            <pre className="font-sans whitespace-pre">
-              {t.welcome.createYourOwnSkillDescription}
-            </pre>
-          ) : (
-            <p>{t.welcome.createYourOwnSkillDescription}</p>
-          )}
+          <AuroraText colors={colors}>{t.welcome.greeting}</AuroraText>
         </div>
-      ) : (
+      </div>
+      {t.welcome.description && (
         <div className="text-muted-foreground text-sm">
           {t.welcome.description.includes("\n") ? (
             <pre className="font-sans whitespace-pre">

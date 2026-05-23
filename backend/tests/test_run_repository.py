@@ -4,6 +4,7 @@ Uses a temp SQLite DB to test ORM-backed CRUD operations.
 """
 
 import re
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy.dialects import postgresql
@@ -57,6 +58,9 @@ class _CustomRunStoreWithoutProgress(RunStore):
 
     async def aggregate_tokens_by_thread(self, *args, **kwargs):
         return {}
+
+    async def aggregate_daily_tokens_by_user(self, *args, **kwargs):
+        return []
 
 
 @pytest.mark.anyio
@@ -391,6 +395,102 @@ class TestRunRepository:
             "middleware": 0,
         }
         await _cleanup()
+
+    @pytest.mark.anyio
+    async def test_aggregate_daily_tokens_by_user_groups_by_date_and_model(self, tmp_path):
+        repo = await _make_repo(tmp_path)
+        today = datetime.now(UTC)
+        yesterday = today - timedelta(days=1)
+        outside_range = today - timedelta(days=10)
+
+        try:
+            await repo.put(
+                "user-a-today-gpt",
+                thread_id="t1",
+                user_id="user-a",
+                model_name="gpt-4o",
+                created_at=today.isoformat(),
+            )
+            await repo.update_run_completion(
+                "user-a-today-gpt",
+                status="success",
+                total_input_tokens=60,
+                total_output_tokens=40,
+                total_tokens=100,
+            )
+            await repo.put(
+                "user-a-today-claude",
+                thread_id="t1",
+                user_id="user-a",
+                model_name="claude-sonnet",
+                created_at=today.isoformat(),
+            )
+            await repo.update_run_completion(
+                "user-a-today-claude",
+                status="success",
+                total_input_tokens=30,
+                total_output_tokens=20,
+                total_tokens=50,
+            )
+            await repo.put(
+                "user-a-yesterday-gpt",
+                thread_id="t2",
+                user_id="user-a",
+                model_name="gpt-4o",
+                created_at=yesterday.isoformat(),
+            )
+            await repo.update_run_completion(
+                "user-a-yesterday-gpt",
+                status="error",
+                total_input_tokens=20,
+                total_output_tokens=10,
+                total_tokens=30,
+            )
+            await repo.put(
+                "user-b-today-gpt",
+                thread_id="t3",
+                user_id="user-b",
+                model_name="gpt-4o",
+                created_at=today.isoformat(),
+            )
+            await repo.update_run_completion(
+                "user-b-today-gpt",
+                status="success",
+                total_input_tokens=900,
+                total_output_tokens=99,
+                total_tokens=999,
+            )
+            await repo.put(
+                "user-a-old-gpt",
+                thread_id="t4",
+                user_id="user-a",
+                model_name="gpt-4o",
+                created_at=outside_range.isoformat(),
+            )
+            await repo.update_run_completion(
+                "user-a-old-gpt",
+                status="success",
+                total_input_tokens=700,
+                total_output_tokens=77,
+                total_tokens=777,
+            )
+
+            rows = await repo.aggregate_daily_tokens_by_user("user-a", days=7)
+        finally:
+            await _cleanup()
+
+        by_key = {(row["date"], row["model"]): row for row in rows}
+        today_key = today.date().isoformat()
+        yesterday_key = yesterday.date().isoformat()
+
+        assert set(by_key) == {
+            (today_key, "claude-sonnet"),
+            (today_key, "gpt-4o"),
+            (yesterday_key, "gpt-4o"),
+        }
+        assert by_key[(today_key, "gpt-4o")]["total_tokens"] == 100
+        assert by_key[(today_key, "claude-sonnet")]["total_input_tokens"] == 30
+        assert by_key[(yesterday_key, "gpt-4o")]["total_output_tokens"] == 10
 
     @pytest.mark.anyio
     async def test_list_by_thread_ordered_desc(self, tmp_path):

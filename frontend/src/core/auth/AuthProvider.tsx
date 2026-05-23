@@ -12,7 +12,7 @@ import React, {
 
 import { isStaticWebsiteOnly } from "../static-mode";
 
-import { type User, buildLoginUrl } from "./types";
+import { type User, buildLoginUrl, parseAuthError } from "./types";
 
 // Re-export for consumers
 export type { User };
@@ -69,11 +69,17 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
         const data = await res.json();
         setUser(data);
       } else if (res.status === 401) {
+        const authError = parseAuthError(await res.json().catch(() => null));
         // Session expired or invalid
         setUser(null);
         // Redirect to login if on a protected route
         if (pathname?.startsWith("/workspace")) {
-          router.push(buildLoginUrl(pathname));
+          const loginUrl = buildLoginUrl(pathname);
+          router.push(
+            authError.code === "account_disabled"
+              ? `${loginUrl}&disabled=1`
+              : loginUrl,
+          );
         }
       }
     } catch (err) {
@@ -132,6 +138,18 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
+  }, [staticMode, user, refreshUser]);
+
+  useEffect(() => {
+    if (staticMode || user === null) return;
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refreshUser();
+      }
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
   }, [staticMode, user, refreshUser]);
 
   const value: AuthContextType = {

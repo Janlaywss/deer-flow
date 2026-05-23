@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/core/auth/AuthProvider";
 import { parseAuthError } from "@/core/auth/types";
 
+const ACCOUNT_DISABLED_MESSAGE = "您的账号已被禁用";
+
 /**
  * Validate next parameter
  * Prevent open redirect attacks
@@ -59,6 +61,7 @@ export default function LoginPage() {
   // Get next parameter for validated redirect
   const nextParam = searchParams.get("next");
   const redirectPath = validateNextParam(nextParam) ?? "/workspace";
+  const disabledParam = searchParams.get("disabled");
 
   // Redirect if already authenticated (client-side, post-login)
   useEffect(() => {
@@ -66,6 +69,12 @@ export default function LoginPage() {
       router.push(redirectPath);
     }
   }, [isAuthenticated, redirectPath, router]);
+
+  useEffect(() => {
+    if (disabledParam === "1") {
+      setError(ACCOUNT_DISABLED_MESSAGE);
+    }
+  }, [disabledParam]);
 
   // Redirect to setup if the system has no users yet
   useEffect(() => {

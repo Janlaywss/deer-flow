@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 
+from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 
@@ -25,6 +26,30 @@ logger = logging.getLogger(__name__)
 
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
+
+
+async def _ensure_users_compat_columns(conn, backend: str) -> None:
+    """Add auth columns introduced after initial table creation.
+
+    ``create_all`` intentionally does not alter existing tables. DeerFlow's
+    SQLite default is often used without Alembic, so keep narrow, idempotent
+    compatibility migrations here for auth columns that must exist before the
+    gateway can read users.
+    """
+
+    def _has_users_column(sync_conn, column_name: str) -> bool:
+        inspector = inspect(sync_conn)
+        if not inspector.has_table("users"):
+            return False
+        return column_name in {column["name"] for column in inspector.get_columns("users")}
+
+    if await conn.run_sync(_has_users_column, "is_disabled"):
+        return
+
+    if backend == "sqlite":
+        await conn.execute(text("ALTER TABLE users ADD COLUMN is_disabled BOOLEAN NOT NULL DEFAULT 0"))
+    elif backend == "postgres":
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_disabled BOOLEAN NOT NULL DEFAULT FALSE"))
 
 
 async def _auto_create_postgres_db(url: str) -> None:
@@ -149,6 +174,7 @@ async def init_engine(
     try:
         async with _engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            await _ensure_users_compat_columns(conn, backend)
     except Exception as exc:
         if backend == "postgres" and "does not exist" in str(exc):
             # Database not yet created — attempt to auto-create it, then retry.
@@ -159,6 +185,7 @@ async def init_engine(
             _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
             async with _engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
+                await _ensure_users_compat_columns(conn, backend)
         else:
             raise
 

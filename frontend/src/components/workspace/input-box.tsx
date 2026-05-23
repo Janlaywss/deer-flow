@@ -7,12 +7,10 @@ import {
   LightbulbIcon,
   PaperclipIcon,
   PlusIcon,
-  SparklesIcon,
   RocketIcon,
   XIcon,
   ZapIcon,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -41,7 +39,6 @@ import {
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ConfettiButton } from "@/components/ui/confetti-button";
 import {
   Dialog,
   DialogContent,
@@ -148,7 +145,6 @@ export function InputBox({
   onStop?: () => void;
 }) {
   const { t } = useI18n();
-  const searchParams = useSearchParams();
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const { models } = useModels();
   const { thread, isMock } = useThread();
@@ -860,7 +856,7 @@ export function InputBox({
         )}
       </PromptInput>
 
-      {isWelcomeMode && searchParams.get("mode") !== "skill" && (
+      {isWelcomeMode && (
         <div className="flex items-center justify-center pt-2">
           <SuggestionList />
         </div>
@@ -894,6 +890,7 @@ export function InputBox({
 function SuggestionList() {
   const { t } = useI18n();
   const { textInput } = usePromptInputController();
+  const createSuggestions = t.inputBox.suggestionsCreate;
   const handleSuggestionClick = useCallback(
     (prompt: string | undefined) => {
       if (!prompt) return;
@@ -916,14 +913,6 @@ function SuggestionList() {
   );
   return (
     <Suggestions className="min-h-16 w-fit items-start">
-      <ConfettiButton
-        className="text-muted-foreground cursor-pointer rounded-full px-4 text-xs font-normal"
-        variant="outline"
-        size="sm"
-        onClick={() => handleSuggestionClick(t.inputBox.surpriseMePrompt)}
-      >
-        <SparklesIcon className="size-4" /> {t.inputBox.surpriseMe}
-      </ConfettiButton>
       {t.inputBox.suggestions.map((suggestion) => (
         <Suggestion
           key={suggestion.suggestion}
@@ -932,30 +921,34 @@ function SuggestionList() {
           onClick={() => handleSuggestionClick(suggestion.prompt)}
         />
       ))}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Suggestion icon={PlusIcon} suggestion={t.common.create} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuGroup>
-            {t.inputBox.suggestionsCreate.map((suggestion, index) =>
-              "type" in suggestion && suggestion.type === "separator" ? (
-                <DropdownMenuSeparator key={index} />
-              ) : (
-                !("type" in suggestion) && (
-                  <DropdownMenuItem
-                    key={suggestion.suggestion}
-                    onClick={() => handleSuggestionClick(suggestion.prompt)}
-                  >
-                    {suggestion.icon && <suggestion.icon className="size-4" />}
-                    {suggestion.suggestion}
-                  </DropdownMenuItem>
-                )
-              ),
-            )}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {createSuggestions.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Suggestion icon={PlusIcon} suggestion={t.common.create} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuGroup>
+              {createSuggestions.map((suggestion, index) =>
+                "type" in suggestion && suggestion.type === "separator" ? (
+                  <DropdownMenuSeparator key={index} />
+                ) : (
+                  !("type" in suggestion) && (
+                    <DropdownMenuItem
+                      key={suggestion.suggestion}
+                      onClick={() => handleSuggestionClick(suggestion.prompt)}
+                    >
+                      {suggestion.icon && (
+                        <suggestion.icon className="size-4" />
+                      )}
+                      {suggestion.suggestion}
+                    </DropdownMenuItem>
+                  )
+                ),
+              )}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </Suggestions>
   );
 }

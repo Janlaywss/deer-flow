@@ -64,6 +64,12 @@ def _init_payload(**extra):
     }
 
 
+def _csrf_headers(client):
+    token = client.cookies.get("csrf_token")
+    assert token, "auth endpoint should set csrf_token cookie"
+    return {"X-CSRF-Token": token}
+
+
 # ── Happy path ────────────────────────────────────────────────────────────
 
 
@@ -83,6 +89,196 @@ def test_initialize_needs_setup_false(client):
     me = client.get("/api/v1/auth/me")
     assert me.status_code == 200
     assert me.json()["needs_setup"] is False
+
+
+def test_admin_can_list_users_with_admin_first(client):
+    """/auth/users lists all users for admins and orders admins first."""
+    regular = client.post(
+        "/api/v1/auth/register",
+        json={"email": "regular@example.com", "password": "Tr0ub4dor3a"},
+    )
+    assert regular.status_code == 201
+
+    admin = client.post("/api/v1/auth/initialize", json=_init_payload())
+    assert admin.status_code == 201
+
+    resp = client.get("/api/v1/auth/users")
+    assert resp.status_code == 200
+    users = resp.json()["users"]
+    assert [user["email"] for user in users] == [
+        "admin@example.com",
+        "regular@example.com",
+    ]
+    assert users[0]["system_role"] == "admin"
+    assert users[1]["system_role"] == "user"
+    assert users[1]["is_disabled"] is False
+
+
+def test_regular_user_cannot_list_users(client):
+    """/auth/users rejects non-admin users."""
+    regular = client.post(
+        "/api/v1/auth/register",
+        json={"email": "regular@example.com", "password": "Tr0ub4dor3a"},
+    )
+    assert regular.status_code == 201
+
+    resp = client.get("/api/v1/auth/users")
+    assert resp.status_code == 403
+
+
+def test_admin_can_create_user(client):
+    """/auth/users lets admins create regular user accounts."""
+    admin = client.post("/api/v1/auth/initialize", json=_init_payload())
+    assert admin.status_code == 201
+
+    created = client.post(
+        "/api/v1/auth/users",
+        json={"email": "created@example.com", "password": "Str0ng!Pass99"},
+        headers=_csrf_headers(client),
+    )
+    assert created.status_code == 201
+    data = created.json()
+    assert data["email"] == "created@example.com"
+    assert data["system_role"] == "user"
+
+    users = client.get("/api/v1/auth/users").json()["users"]
+    assert [user["email"] for user in users] == [
+        "admin@example.com",
+        "created@example.com",
+    ]
+
+
+def test_admin_create_user_rejects_duplicate_email(client):
+    """/auth/users returns structured duplicate-email errors."""
+    admin = client.post("/api/v1/auth/initialize", json=_init_payload())
+    assert admin.status_code == 201
+
+    first = client.post(
+        "/api/v1/auth/users",
+        json={"email": "duplicate@example.com", "password": "Str0ng!Pass99"},
+        headers=_csrf_headers(client),
+    )
+    assert first.status_code == 201
+
+    duplicate = client.post(
+        "/api/v1/auth/users",
+        json={"email": "duplicate@example.com", "password": "AnotherStr0ng99"},
+        headers=_csrf_headers(client),
+    )
+    assert duplicate.status_code == 400
+    assert duplicate.json()["detail"]["code"] == "email_already_exists"
+
+
+def test_regular_user_cannot_create_user(client):
+    """/auth/users rejects create requests from non-admin users."""
+    regular = client.post(
+        "/api/v1/auth/register",
+        json={"email": "regular@example.com", "password": "Tr0ub4dor3a"},
+    )
+    assert regular.status_code == 201
+
+    resp = client.post(
+        "/api/v1/auth/users",
+        json={"email": "created@example.com", "password": "Str0ng!Pass99"},
+        headers=_csrf_headers(client),
+    )
+    assert resp.status_code == 403
+
+
+def test_admin_can_disable_and_enable_user(client):
+    """Admins can disable accounts without deleting account data, then re-enable them."""
+    from fastapi.testclient import TestClient
+
+    admin = client.post("/api/v1/auth/initialize", json=_init_payload())
+    assert admin.status_code == 201
+
+    created = client.post(
+        "/api/v1/auth/users",
+        json={"email": "toggle@example.com", "password": "Str0ng!Pass99"},
+        headers=_csrf_headers(client),
+    )
+    assert created.status_code == 201
+    user_id = created.json()["id"]
+
+    regular_client = TestClient(client.app)
+    login = regular_client.post(
+        "/api/v1/auth/login/local",
+        data={"username": "toggle@example.com", "password": "Str0ng!Pass99"},
+    )
+    assert login.status_code == 200
+    assert regular_client.get("/api/v1/auth/me").status_code == 200
+
+    disabled = client.patch(
+        f"/api/v1/auth/users/{user_id}",
+        json={"is_disabled": True},
+        headers=_csrf_headers(client),
+    )
+    assert disabled.status_code == 200
+    assert disabled.json()["is_disabled"] is True
+
+    users = client.get("/api/v1/auth/users").json()["users"]
+    disabled_user = next(user for user in users if user["id"] == user_id)
+    assert disabled_user["email"] == "toggle@example.com"
+    assert disabled_user["is_disabled"] is True
+
+    me_after_disable = regular_client.get("/api/v1/auth/me")
+    assert me_after_disable.status_code == 401
+    assert me_after_disable.json()["detail"]["code"] == "account_disabled"
+
+    login_after_disable = regular_client.post(
+        "/api/v1/auth/login/local",
+        data={"username": "toggle@example.com", "password": "Str0ng!Pass99"},
+    )
+    assert login_after_disable.status_code == 403
+    assert login_after_disable.json()["detail"] == {
+        "code": "account_disabled",
+        "message": "您的账号已被禁用",
+    }
+
+    enabled = client.patch(
+        f"/api/v1/auth/users/{user_id}",
+        json={"is_disabled": False},
+        headers=_csrf_headers(client),
+    )
+    assert enabled.status_code == 200
+    assert enabled.json()["is_disabled"] is False
+
+    login_after_enable = regular_client.post(
+        "/api/v1/auth/login/local",
+        data={"username": "toggle@example.com", "password": "Str0ng!Pass99"},
+    )
+    assert login_after_enable.status_code == 200
+
+
+def test_regular_user_cannot_update_user_status(client):
+    """/auth/users/{id} rejects enable/disable requests from non-admin users."""
+    regular = client.post(
+        "/api/v1/auth/register",
+        json={"email": "regular@example.com", "password": "Tr0ub4dor3a"},
+    )
+    assert regular.status_code == 201
+    user_id = regular.json()["id"]
+
+    resp = client.patch(
+        f"/api/v1/auth/users/{user_id}",
+        json={"is_disabled": True},
+        headers=_csrf_headers(client),
+    )
+    assert resp.status_code == 403
+
+
+def test_admin_cannot_disable_self(client):
+    """Admins cannot disable their own account and lock themselves out."""
+    admin = client.post("/api/v1/auth/initialize", json=_init_payload())
+    assert admin.status_code == 201
+    admin_id = admin.json()["id"]
+
+    resp = client.patch(
+        f"/api/v1/auth/users/{admin_id}",
+        json={"is_disabled": True},
+        headers=_csrf_headers(client),
+    )
+    assert resp.status_code == 400
 
 
 # ── Rejection when already initialized ───────────────────────────────────

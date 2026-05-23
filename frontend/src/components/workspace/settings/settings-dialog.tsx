@@ -3,7 +3,7 @@
 import {
   BellIcon,
   InfoIcon,
-  BrainIcon,
+  type LucideIcon,
   PaletteIcon,
   SparklesIcon,
   UserIcon,
@@ -21,17 +21,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AboutSettingsPage } from "@/components/workspace/settings/about-settings-page";
 import { AccountSettingsPage } from "@/components/workspace/settings/account-settings-page";
 import { AppearanceSettingsPage } from "@/components/workspace/settings/appearance-settings-page";
-import { MemorySettingsPage } from "@/components/workspace/settings/memory-settings-page";
 import { NotificationSettingsPage } from "@/components/workspace/settings/notification-settings-page";
 import { SkillSettingsPage } from "@/components/workspace/settings/skill-settings-page";
 import { ToolSettingsPage } from "@/components/workspace/settings/tool-settings-page";
+import { useAuth } from "@/core/auth/AuthProvider";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 
 type SettingsSection =
   | "account"
   | "appearance"
-  | "memory"
   | "tools"
   | "skills"
   | "notification"
@@ -41,22 +40,39 @@ type SettingsDialogProps = React.ComponentProps<typeof Dialog> & {
   defaultSection?: SettingsSection;
 };
 
+type SettingsNavigationSection = {
+  id: SettingsSection;
+  label: string;
+  icon: LucideIcon;
+};
+
 export function SettingsDialog(props: SettingsDialogProps) {
   const { defaultSection = "appearance", ...dialogProps } = props;
+  const { user } = useAuth();
   const { t } = useI18n();
-  const [activeSection, setActiveSection] =
-    useState<SettingsSection>(defaultSection);
+  const isAdmin = user?.system_role === "admin";
+  const resolvedDefaultSection =
+    defaultSection === "tools" && !isAdmin ? "appearance" : defaultSection;
+  const [activeSection, setActiveSection] = useState<SettingsSection>(
+    resolvedDefaultSection,
+  );
 
   useEffect(() => {
     // When opening the dialog, ensure the active section follows the caller's intent.
     // This allows triggers like "About" to open the dialog directly on that page.
     if (dialogProps.open) {
-      setActiveSection(defaultSection);
+      setActiveSection(resolvedDefaultSection);
     }
-  }, [defaultSection, dialogProps.open]);
+  }, [dialogProps.open, resolvedDefaultSection]);
+
+  useEffect(() => {
+    if (!isAdmin && activeSection === "tools") {
+      setActiveSection("appearance");
+    }
+  }, [activeSection, isAdmin]);
 
   const sections = useMemo(
-    () => [
+    (): SettingsNavigationSection[] => [
       {
         id: "account",
         label: t.settings.sections.account,
@@ -72,19 +88,22 @@ export function SettingsDialog(props: SettingsDialogProps) {
         label: t.settings.sections.notification,
         icon: BellIcon,
       },
-      {
-        id: "memory",
-        label: t.settings.sections.memory,
-        icon: BrainIcon,
-      },
-      { id: "tools", label: t.settings.sections.tools, icon: WrenchIcon },
+      ...(isAdmin
+        ? [
+            {
+              id: "tools" as const,
+              label: t.settings.sections.tools,
+              icon: WrenchIcon,
+            },
+          ]
+        : []),
       { id: "skills", label: t.settings.sections.skills, icon: SparklesIcon },
       { id: "about", label: t.settings.sections.about, icon: InfoIcon },
     ],
     [
+      isAdmin,
       t.settings.sections.account,
       t.settings.sections.appearance,
-      t.settings.sections.memory,
       t.settings.sections.tools,
       t.settings.sections.skills,
       t.settings.sections.notification,
@@ -115,7 +134,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
                   <li key={id}>
                     <button
                       type="button"
-                      onClick={() => setActiveSection(id as SettingsSection)}
+                      onClick={() => setActiveSection(id)}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                         active
@@ -135,13 +154,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
             <div className="space-y-8 p-6">
               {activeSection === "account" && <AccountSettingsPage />}
               {activeSection === "appearance" && <AppearanceSettingsPage />}
-              {activeSection === "memory" && <MemorySettingsPage />}
-              {activeSection === "tools" && <ToolSettingsPage />}
-              {activeSection === "skills" && (
-                <SkillSettingsPage
-                  onClose={() => props.onOpenChange?.(false)}
-                />
-              )}
+              {activeSection === "tools" && isAdmin && <ToolSettingsPage />}
+              {activeSection === "skills" && <SkillSettingsPage />}
               {activeSection === "notification" && <NotificationSettingsPage />}
               {activeSection === "about" && <AboutSettingsPage />}
             </div>

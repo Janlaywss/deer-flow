@@ -1,13 +1,4 @@
-import {
-  CompassIcon,
-  GraduationCapIcon,
-  ImageIcon,
-  MicroscopeIcon,
-  PenLineIcon,
-  ShapesIcon,
-  SparklesIcon,
-  VideoIcon,
-} from "lucide-react";
+import { MicroscopeIcon, PenLineIcon } from "lucide-react";
 
 import type { Translations } from "./types";
 
@@ -61,12 +52,7 @@ export const enUS: Translations = {
   // Welcome
   welcome: {
     greeting: "Hello, again!",
-    description:
-      "Welcome to 🦌 DeerFlow, an open source super agent. With built-in and custom skills, DeerFlow helps you search on the web, analyze data, and generate artifacts like slides, web pages and do almost anything.",
-
-    createYourOwnSkill: "Create Your Own Skill",
-    createYourOwnSkillDescription:
-      "Create your own skill to release the power of DeerFlow. With customized skills,\nDeerFlow can help you search on the web, analyze data, and generate\n artifacts like slides, web pages and do almost anything.",
+    description: "",
   },
 
   // Clipboard
@@ -80,8 +66,6 @@ export const enUS: Translations = {
   // Input Box
   inputBox: {
     placeholder: "How can I assist you today?",
-    createSkillPrompt:
-      "We're going to build a new skill step by step with `skill-creator`. To start, what do you want this skill to do?",
     addAttachments: "Add attachments",
     mode: "Mode",
     flashMode: "Flash",
@@ -107,8 +91,6 @@ export const enUS: Translations = {
     reasoningEffortHighDescription:
       "Full-dimensional Logic Deduction + Multi-path Verification + Backward Check",
     searchModels: "Search models...",
-    surpriseMe: "Surprise",
-    surpriseMePrompt: "Surprise me",
     followupLoading: "Generating follow-up questions...",
     followupConfirmTitle: "Send suggestion?",
     followupConfirmDescription:
@@ -127,43 +109,8 @@ export const enUS: Translations = {
           "Conduct a deep dive research on [topic], and summarize the findings.",
         icon: MicroscopeIcon,
       },
-      {
-        suggestion: "Collect",
-        prompt: "Collect data from [source] and create a report.",
-        icon: ShapesIcon,
-      },
-      {
-        suggestion: "Learn",
-        prompt: "Learn about [topic] and create a tutorial.",
-        icon: GraduationCapIcon,
-      },
     ],
-    suggestionsCreate: [
-      {
-        suggestion: "Webpage",
-        prompt: "Create a webpage about [topic]",
-        icon: CompassIcon,
-      },
-      {
-        suggestion: "Image",
-        prompt: "Create an image about [topic]",
-        icon: ImageIcon,
-      },
-      {
-        suggestion: "Video",
-        prompt: "Create a video about [topic]",
-        icon: VideoIcon,
-      },
-      {
-        type: "separator",
-      },
-      {
-        suggestion: "Skill",
-        prompt:
-          "We're going to build a new skill step by step with `skill-creator`. To start, what do you want this skill to do?",
-        icon: SparklesIcon,
-      },
-    ],
+    suggestionsCreate: [],
   },
 
   // Sidebar
@@ -173,6 +120,8 @@ export const enUS: Translations = {
     recentChats: "Recent chats",
     demoChats: "Demo chats",
     agents: "Agents",
+    userManagement: "User management",
+    tokenUsage: "Token dashboard",
   },
 
   // Agents
@@ -222,6 +171,67 @@ export const enUS: Translations = {
     agentCreated: "Agent created!",
     startChatting: "Start chatting",
     backToGallery: "Back to Gallery",
+  },
+
+  // Users
+  users: {
+    title: "User management",
+    description: "View DeerFlow users and their system permissions.",
+    email: "Email",
+    permission: "Permission",
+    status: "Status",
+    actions: "Actions",
+    roleAdmin: "Admin",
+    roleUser: "User",
+    statusEnabled: "Enabled",
+    statusDisabled: "Disabled",
+    userCount: (count: number) => `${count} user${count === 1 ? "" : "s"}`,
+    emptyTitle: "No users yet",
+    emptyDescription: "Registered DeerFlow users will appear here.",
+    loadErrorTitle: "Could not load users",
+    loadErrorDescription: "Please refresh the page or try again later.",
+    accessDeniedTitle: "Admin access required",
+    accessDeniedDescription:
+      "Only DeerFlow administrators can view user management.",
+    unavailableTitle: "User management unavailable",
+    addUser: "Add user",
+    addUserDescription:
+      "Create a regular DeerFlow user with email and password.",
+    emailPlaceholder: "user@example.com",
+    password: "Password",
+    passwordPlaceholder: "Enter an initial password",
+    passwordHint: "Use at least 8 characters.",
+    create: "Create user",
+    creating: "Creating...",
+    createErrorTitle: "Could not create user",
+    createErrorDescription: "Please check the user details and try again.",
+    disableUser: "Disable",
+    enableUser: "Enable",
+    updating: "Updating...",
+    updateErrorTitle: "Could not update account status",
+    updateErrorDescription: "Please try again later.",
+    currentAccount: "Current account",
+  },
+
+  // Token Usage Dashboard
+  tokenUsageDashboard: {
+    title: "Token Dashboard",
+    description: "Review your token usage for the last 7 or 30 days by model.",
+    last7Days: "Last 7 days",
+    last30Days: "Last 30 days",
+    totalTokens: "Total tokens",
+    inputTokens: "Input tokens",
+    outputTokens: "Output tokens",
+    dailyByModel: "Daily model usage",
+    rangeLabel: (startDate: string, endDate: string) =>
+      `${startDate} to ${endDate}`,
+    modelCount: (count: number) => `${count} model${count === 1 ? "" : "s"}`,
+    emptyTitle: "No token usage",
+    emptyDescription: "No token usage was recorded in this time range.",
+    loadErrorTitle: "Could not load token usage",
+    loadErrorDescription: "Please refresh the page or try again later.",
+    tooltip: (date: string, tokens: number) =>
+      `${date}: ${new Intl.NumberFormat().format(tokens)} tokens`,
   },
 
   // Breadcrumb
@@ -459,11 +469,9 @@ export const enUS: Translations = {
       title: "Agent Skills",
       description:
         "Manage the configuration and enabled status of the agent skills.",
-      createSkill: "Create skill",
       emptyTitle: "No agent skill yet",
       emptyDescription:
         "Put your agent skill folders under the `/skills/custom` folder under the root folder of DeerFlow.",
-      emptyButton: "Create Your First Skill",
     },
     notification: {
       title: "Notification",

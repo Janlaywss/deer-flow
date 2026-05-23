@@ -18,6 +18,7 @@ from starlette.types import ASGIApp
 
 from app.gateway.auth.errors import AuthErrorCode, AuthErrorResponse
 from app.gateway.authz import _ALL_PERMISSIONS, AuthContext
+from app.gateway.csrf_middleware import is_secure_request
 from app.gateway.internal_auth import INTERNAL_AUTH_HEADER_NAME, get_internal_user, is_valid_internal_auth_token
 from deerflow.runtime.user_context import reset_current_user, set_current_user
 
@@ -111,7 +112,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
             try:
                 user = await get_current_user_from_request(request)
             except HTTPException as exc:
-                return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+                response = JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+                if isinstance(exc.detail, dict) and exc.detail.get("code") == AuthErrorCode.ACCOUNT_DISABLED:
+                    response.delete_cookie(key="access_token", secure=is_secure_request(request), samesite="lax")
+                return response
 
         # Stamp both request.state.user (for the contextvar pattern)
         # and request.state.auth (so @require_permission's "auth is

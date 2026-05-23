@@ -1,13 +1,4 @@
-﻿import {
-  CompassIcon,
-  GraduationCapIcon,
-  ImageIcon,
-  MicroscopeIcon,
-  PenLineIcon,
-  ShapesIcon,
-  SparklesIcon,
-  VideoIcon,
-} from "lucide-react";
+﻿import { MicroscopeIcon, PenLineIcon } from "lucide-react";
 
 import type { Translations } from "./types";
 
@@ -61,12 +52,7 @@ export const zhCN: Translations = {
   // Welcome
   welcome: {
     greeting: "你好，欢迎回来！",
-    description:
-      "欢迎使用 🦌 DeerFlow，一个完全开源的超级智能体。通过内置和自定义的 Skills，\nDeerFlow 可以帮你搜索网络、分析数据，还能为你生成幻灯片、\n图片、视频、播客及网页等，几乎可以做任何事情。",
-
-    createYourOwnSkill: "创建你自己的 Agent SKill",
-    createYourOwnSkillDescription:
-      "创建你的 Agent Skill 来释放 DeerFlow 的潜力。通过自定义技能，DeerFlow\n可以帮你搜索网络、分析数据，还能为你生成幻灯片、\n网页等作品，几乎可以做任何事情。",
+    description: "",
   },
 
   // Clipboard
@@ -80,8 +66,6 @@ export const zhCN: Translations = {
   // Input Box
   inputBox: {
     placeholder: "今天我能为你做些什么？",
-    createSkillPrompt:
-      "我们一起用 skill-creator 技能来创建一个技能吧。先问问我希望这个技能能做什么。",
     addAttachments: "添加附件",
     mode: "模式",
     flashMode: "闪速",
@@ -103,8 +87,6 @@ export const zhCN: Translations = {
     reasoningEffortHigh: "高",
     reasoningEffortHighDescription: "全维度逻辑推演 + 多路径验证 + 反推校验",
     searchModels: "搜索模型...",
-    surpriseMe: "小惊喜",
-    surpriseMePrompt: "给我一个小惊喜吧",
     followupLoading: "正在生成可能的后续问题...",
     followupConfirmTitle: "发送建议问题？",
     followupConfirmDescription: "当前输入框已有内容，选择发送方式。",
@@ -121,43 +103,8 @@ export const zhCN: Translations = {
         prompt: "深入浅出的研究一下[主题]，并总结发现。",
         icon: MicroscopeIcon,
       },
-      {
-        suggestion: "收集",
-        prompt: "从[来源]收集数据并创建报告。",
-        icon: ShapesIcon,
-      },
-      {
-        suggestion: "学习",
-        prompt: "学习关于[主题]并创建教程。",
-        icon: GraduationCapIcon,
-      },
     ],
-    suggestionsCreate: [
-      {
-        suggestion: "网页",
-        prompt: "生成一个关于[主题]的网页",
-        icon: CompassIcon,
-      },
-      {
-        suggestion: "图片",
-        prompt: "生成一个关于[主题]的图片",
-        icon: ImageIcon,
-      },
-      {
-        suggestion: "视频",
-        prompt: "生成一个关于[主题]的视频",
-        icon: VideoIcon,
-      },
-      {
-        type: "separator",
-      },
-      {
-        suggestion: "技能",
-        prompt:
-          "我们一起用 skill-creator 技能来创建一个技能吧。先问问我希望这个技能能做什么。",
-        icon: SparklesIcon,
-      },
-    ],
+    suggestionsCreate: [],
   },
 
   // Sidebar
@@ -167,6 +114,8 @@ export const zhCN: Translations = {
     recentChats: "最近的对话",
     demoChats: "演示对话",
     agents: "智能体",
+    userManagement: "用户管理",
+    tokenUsage: "Token 消耗看板",
   },
 
   // Agents
@@ -210,6 +159,65 @@ export const zhCN: Translations = {
     agentCreated: "智能体已创建！",
     startChatting: "开始对话",
     backToGallery: "返回 Gallery",
+  },
+
+  // Users
+  users: {
+    title: "用户管理",
+    description: "查看 DeerFlow 系统内的用户和系统权限。",
+    email: "邮箱",
+    permission: "权限",
+    status: "状态",
+    actions: "操作",
+    roleAdmin: "管理员",
+    roleUser: "普通用户",
+    statusEnabled: "已启用",
+    statusDisabled: "已禁用",
+    userCount: (count: number) => `${count} 个用户`,
+    emptyTitle: "还没有用户",
+    emptyDescription: "DeerFlow 注册用户会显示在这里。",
+    loadErrorTitle: "无法加载用户列表",
+    loadErrorDescription: "请刷新页面或稍后重试。",
+    accessDeniedTitle: "需要管理员权限",
+    accessDeniedDescription: "只有 DeerFlow 管理员可以查看用户管理。",
+    unavailableTitle: "用户管理不可用",
+    addUser: "新增用户",
+    addUserDescription: "通过邮箱和密码创建一个 DeerFlow 普通用户。",
+    emailPlaceholder: "user@example.com",
+    password: "密码",
+    passwordPlaceholder: "输入初始密码",
+    passwordHint: "至少 8 个字符。",
+    create: "创建用户",
+    creating: "创建中...",
+    createErrorTitle: "无法创建用户",
+    createErrorDescription: "请检查用户信息后重试。",
+    disableUser: "禁用",
+    enableUser: "启用",
+    updating: "处理中...",
+    updateErrorTitle: "无法更新账号状态",
+    updateErrorDescription: "请稍后重试。",
+    currentAccount: "当前账号",
+  },
+
+  // Token Usage Dashboard
+  tokenUsageDashboard: {
+    title: "Token 消耗看板",
+    description: "查看你近 7 天和 30 天按模型拆分的 Token 使用情况。",
+    last7Days: "近 7 天",
+    last30Days: "近 30 天",
+    totalTokens: "总 Token",
+    inputTokens: "输入 Token",
+    outputTokens: "输出 Token",
+    dailyByModel: "每日模型消耗",
+    rangeLabel: (startDate: string, endDate: string) =>
+      `${startDate} 至 ${endDate}`,
+    modelCount: (count: number) => `${count} 个模型`,
+    emptyTitle: "暂无 Token 消耗",
+    emptyDescription: "该时间范围内还没有记录到 Token 使用。",
+    loadErrorTitle: "无法加载 Token 消耗",
+    loadErrorDescription: "请刷新页面或稍后重试。",
+    tooltip: (date: string, tokens: number) =>
+      `${date}: ${new Intl.NumberFormat().format(tokens)} Token`,
   },
 
   // Breadcrumb
@@ -439,11 +447,9 @@ export const zhCN: Translations = {
     skills: {
       title: "技能",
       description: "管理 Agent Skill 配置和启用状态。",
-      createSkill: "新建技能",
       emptyTitle: "还没有技能",
       emptyDescription:
         "将你的 Agent Skill 文件夹放在 DeerFlow 根目录下的 `/skills/custom` 文件夹中。",
-      emptyButton: "创建你的第一个技能",
     },
     notification: {
       title: "通知",

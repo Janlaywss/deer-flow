@@ -50,8 +50,6 @@ export interface Translations {
   welcome: {
     greeting: string;
     description: string;
-    createYourOwnSkill: string;
-    createYourOwnSkillDescription: string;
   };
 
   // Clipboard
@@ -65,7 +63,6 @@ export interface Translations {
   // Input Box
   inputBox: {
     placeholder: string;
-    createSkillPrompt: string;
     addAttachments: string;
     mode: string;
     flashMode: string;
@@ -86,8 +83,6 @@ export interface Translations {
     reasoningEffortHigh: string;
     reasoningEffortHighDescription: string;
     searchModels: string;
-    surpriseMe: string;
-    surpriseMePrompt: string;
     followupLoading: string;
     followupConfirmTitle: string;
     followupConfirmDescription: string;
@@ -117,6 +112,8 @@ export interface Translations {
     chats: string;
     demoChats: string;
     agents: string;
+    userManagement: string;
+    tokenUsage: string;
   };
 
   // Agents
@@ -153,6 +150,63 @@ export interface Translations {
     agentCreated: string;
     startChatting: string;
     backToGallery: string;
+  };
+
+  // Users
+  users: {
+    title: string;
+    description: string;
+    email: string;
+    permission: string;
+    status: string;
+    actions: string;
+    roleAdmin: string;
+    roleUser: string;
+    statusEnabled: string;
+    statusDisabled: string;
+    userCount: (count: number) => string;
+    emptyTitle: string;
+    emptyDescription: string;
+    loadErrorTitle: string;
+    loadErrorDescription: string;
+    accessDeniedTitle: string;
+    accessDeniedDescription: string;
+    unavailableTitle: string;
+    addUser: string;
+    addUserDescription: string;
+    emailPlaceholder: string;
+    password: string;
+    passwordPlaceholder: string;
+    passwordHint: string;
+    create: string;
+    creating: string;
+    createErrorTitle: string;
+    createErrorDescription: string;
+    disableUser: string;
+    enableUser: string;
+    updating: string;
+    updateErrorTitle: string;
+    updateErrorDescription: string;
+    currentAccount: string;
+  };
+
+  // Token usage dashboard
+  tokenUsageDashboard: {
+    title: string;
+    description: string;
+    last7Days: string;
+    last30Days: string;
+    totalTokens: string;
+    inputTokens: string;
+    outputTokens: string;
+    dailyByModel: string;
+    rangeLabel: (startDate: string, endDate: string) => string;
+    modelCount: (count: number) => string;
+    emptyTitle: string;
+    emptyDescription: string;
+    loadErrorTitle: string;
+    loadErrorDescription: string;
+    tooltip: (date: string, tokens: number) => string;
   };
 
   // Breadcrumb
@@ -378,10 +432,8 @@ export interface Translations {
     skills: {
       title: string;
       description: string;
-      createSkill: string;
       emptyTitle: string;
       emptyDescription: string;
-      emptyButton: string;
     };
     notification: {
       title: string;

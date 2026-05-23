@@ -140,3 +140,8 @@ class RunStore(abc.ABC):
         by_caller ({lead_agent, subagent, middleware}).
         """
         pass
+
+    @abc.abstractmethod
+    async def aggregate_daily_tokens_by_user(self, user_id: str, *, days: int) -> list[dict[str, Any]]:
+        """Aggregate token usage for one user by UTC day and model."""
+        pass

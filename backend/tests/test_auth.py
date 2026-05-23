@@ -298,6 +298,12 @@ def test_user_model_has_token_version_default_zero():
     assert user.token_version == 0
 
 
+def test_user_model_has_is_disabled_default_false():
+    """New users default to enabled accounts."""
+    user = User(email="test@example.com", password_hash="hash")
+    assert user.is_disabled is False
+
+
 def test_user_model_needs_setup_true():
     """Auto-created admin has needs_setup=True."""
     user = User(email="admin@example.com", password_hash="hash", needs_setup=True)
@@ -334,25 +340,71 @@ def test_sqlite_round_trip_new_fields():
                     system_role="admin",
                     needs_setup=True,
                     token_version=3,
+                    is_disabled=True,
                 )
                 created = await repo.create_user(user)
                 assert created.needs_setup is True
                 assert created.token_version == 3
+                assert created.is_disabled is True
 
                 fetched = await repo.get_user_by_email("setup@test.com")
                 assert fetched is not None
                 assert fetched.needs_setup is True
                 assert fetched.token_version == 3
+                assert fetched.is_disabled is True
 
                 fetched.needs_setup = False
                 fetched.token_version = 4
+                fetched.is_disabled = False
                 await repo.update_user(fetched)
                 refetched = await repo.get_user_by_id(str(fetched.id))
                 assert refetched is not None
                 assert refetched.needs_setup is False
                 assert refetched.token_version == 4
+                assert refetched.is_disabled is False
             finally:
                 await close_engine()
+
+    asyncio.run(_run())
+
+
+def test_sqlite_existing_users_table_gets_is_disabled_column(tmp_path):
+    """SQLite auto-upgrade adds is_disabled to existing users tables."""
+    import asyncio
+    import sqlite3
+
+    db_path = tmp_path / "legacy.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE users (
+                id VARCHAR(36) PRIMARY KEY,
+                email VARCHAR(320) UNIQUE NOT NULL,
+                password_hash VARCHAR(128),
+                system_role VARCHAR(16) NOT NULL DEFAULT 'user',
+                created_at DATETIME NOT NULL,
+                oauth_provider VARCHAR(32),
+                oauth_id VARCHAR(128),
+                needs_setup BOOLEAN NOT NULL DEFAULT 0,
+                token_version INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
+
+    async def _run() -> None:
+        from sqlalchemy import inspect
+
+        from deerflow.persistence.engine import close_engine, get_engine, init_engine
+
+        await init_engine("sqlite", url=f"sqlite+aiosqlite:///{db_path}", sqlite_dir=str(tmp_path))
+        try:
+            engine = get_engine()
+            assert engine is not None
+            async with engine.begin() as conn:
+                columns = await conn.run_sync(lambda sync_conn: {column["name"] for column in inspect(sync_conn).get_columns("users")})
+            assert "is_disabled" in columns
+        finally:
+            await close_engine()
 
     asyncio.run(_run())
 

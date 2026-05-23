@@ -1,4 +1,24 @@
 export function GET() {
+  const hiddenSkillNames = new Set([
+    "chart-visualization",
+    "claude-to-deerflow",
+    "code-documentation",
+    "data-analysis",
+    "find-skills",
+    "frontend-design",
+    "github-deep-research",
+    "image-generation",
+    "newsletter-generation",
+    "podcast-generation",
+    "ppt-generation",
+    "skill-creator",
+    "surprise-me",
+    "systematic-literature-review",
+    "vercel-deploy",
+    "video-generation",
+    "web-design-guidelines",
+  ]);
+
   return Response.json({
     skills: [
       {
@@ -81,6 +101,6 @@ export function GET() {
         category: "public",
         enabled: true,
       },
-    ],
+    ].filter((skill) => !hiddenSkillNames.has(skill.name)),
   });
 }

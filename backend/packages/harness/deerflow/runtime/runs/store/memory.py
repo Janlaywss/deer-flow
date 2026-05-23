@@ -5,7 +5,7 @@ Equivalent to the original RunManager._runs dict behavior.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from deerflow.runtime.runs.store.base import RunStore
@@ -126,3 +126,41 @@ class MemoryRunStore(RunStore):
                 "middleware": sum(r.get("middleware_tokens", 0) for r in completed),
             },
         }
+
+    async def aggregate_daily_tokens_by_user(self, user_id: str, *, days: int) -> list[dict[str, Any]]:
+        statuses = ("success", "error")
+        start_date = datetime.now(UTC).date() - timedelta(days=days - 1)
+        rows: dict[tuple[str, str], dict[str, Any]] = {}
+
+        for run in self._runs.values():
+            if run.get("user_id") != user_id or run.get("status") not in statuses:
+                continue
+            created_at = run.get("created_at")
+            if not created_at:
+                continue
+            created_dt = datetime.fromisoformat(str(created_at))
+            if created_dt.tzinfo is None:
+                created_dt = created_dt.replace(tzinfo=UTC)
+            day = created_dt.astimezone(UTC).date()
+            if day < start_date:
+                continue
+
+            model = run.get("model_name") or "unknown"
+            key = (day.isoformat(), model)
+            row = rows.setdefault(
+                key,
+                {
+                    "date": day.isoformat(),
+                    "model": model,
+                    "runs": 0,
+                    "total_tokens": 0,
+                    "total_input_tokens": 0,
+                    "total_output_tokens": 0,
+                },
+            )
+            row["runs"] += 1
+            row["total_tokens"] += run.get("total_tokens", 0)
+            row["total_input_tokens"] += run.get("total_input_tokens", 0)
+            row["total_output_tokens"] += run.get("total_output_tokens", 0)
+
+        return sorted(rows.values(), key=lambda row: (row["date"], row["model"]))

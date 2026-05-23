@@ -86,6 +86,11 @@ async def authenticate(request):
             status_code=401,
             detail="User not found",
         )
+    if user.is_disabled:
+        raise Auth.exceptions.HTTPException(
+            status_code=401,
+            detail="您的账号已被禁用",
+        )
     if user.token_version != payload.ver:
         raise Auth.exceptions.HTTPException(
             status_code=401,

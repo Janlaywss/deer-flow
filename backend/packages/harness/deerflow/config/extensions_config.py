@@ -200,6 +200,11 @@ class ExtensionsConfig(BaseModel):
         Returns:
             True if enabled, False otherwise
         """
+        from deerflow.skills.policy import is_hidden_skill_name
+
+        if is_hidden_skill_name(skill_name):
+            return False
+
         skill_config = self.skills.get(skill_name)
         if skill_config is None:
             # Default to enable for public & custom skill

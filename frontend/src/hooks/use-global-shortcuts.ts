@@ -20,10 +20,14 @@ export function useGlobalShortcuts(shortcuts: Shortcut[]) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const meta = event.metaKey || event.ctrlKey;
+      if (typeof event.key !== "string") return;
+      const eventKey = event.key.toLowerCase();
 
       for (const shortcut of shortcuts) {
+        if (typeof shortcut.key !== "string") continue;
+        const shortcutKey = shortcut.key.toLowerCase();
         if (
-          event.key.toLowerCase() === shortcut.key.toLowerCase() &&
+          eventKey === shortcutKey &&
           meta === shortcut.meta &&
           (shortcut.shift ?? false) === event.shiftKey
         ) {

@@ -25,6 +25,7 @@ from app.gateway.routers import (
     suggestions,
     thread_runs,
     threads,
+    token_usage,
     uploads,
 )
 from deerflow.config import app_config as deerflow_app_config
@@ -374,6 +375,9 @@ This gateway provides runtime endpoints for agent runs plus custom endpoints for
 
     # Stateless Runs API (stream/wait without a pre-existing thread)
     app.include_router(runs.router)
+
+    # Token usage dashboard API is mounted at /api/token-usage
+    app.include_router(token_usage.router)
 
     @app.get("/health", tags=["health"])
     async def health_check() -> dict[str, str]:

@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import UTC
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -46,6 +46,7 @@ class SQLiteUserRepository(UserRepository):
             oauth_id=row.oauth_id,
             needs_setup=row.needs_setup,
             token_version=row.token_version,
+            is_disabled=row.is_disabled,
         )
 
     @staticmethod
@@ -60,6 +61,7 @@ class SQLiteUserRepository(UserRepository):
             oauth_id=user.oauth_id,
             needs_setup=user.needs_setup,
             token_version=user.token_version,
+            is_disabled=user.is_disabled,
         )
 
     # ── CRUD ──────────────────────────────────────────────────────────
@@ -88,6 +90,15 @@ class SQLiteUserRepository(UserRepository):
             row = result.scalar_one_or_none()
             return self._row_to_user(row) if row is not None else None
 
+    async def list_users(self) -> list[User]:
+        stmt = select(UserRow).order_by(
+            case((UserRow.system_role == "admin", 0), else_=1),
+            func.lower(UserRow.email),
+        )
+        async with self._sf() as session:
+            result = await session.execute(stmt)
+            return [self._row_to_user(row) for row in result.scalars().all()]
+
     async def update_user(self, user: User) -> User:
         async with self._sf() as session:
             row = await session.get(UserRow, str(user.id))
@@ -106,6 +117,7 @@ class SQLiteUserRepository(UserRepository):
             row.oauth_id = user.oauth_id
             row.needs_setup = user.needs_setup
             row.token_version = user.token_version
+            row.is_disabled = user.is_disabled
             await session.commit()
         return user
 

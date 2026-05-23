@@ -1,6 +1,6 @@
 "use client";
 
-import { BotIcon, MessagesSquare } from "lucide-react";
+import { BarChart3Icon, MessagesSquare, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -10,11 +10,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/core/auth/AuthProvider";
 import { useI18n } from "@/core/i18n/hooks";
+import { isStaticWebsiteOnly } from "@/core/static-mode";
 
 export function WorkspaceNavChatList() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const pathname = usePathname();
+  const showUserManagement =
+    user?.system_role === "admin" && !isStaticWebsiteOnly();
+
   return (
     <SidebarGroup className="pt-1">
       <SidebarMenu>
@@ -26,14 +32,30 @@ export function WorkspaceNavChatList() {
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+        {showUserManagement && (
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              isActive={pathname.startsWith("/workspace/users")}
+              asChild
+            >
+              <Link className="text-muted-foreground" href="/workspace/users">
+                <UsersIcon />
+                <span>{t.sidebar.userManagement}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )}
         <SidebarMenuItem>
           <SidebarMenuButton
-            isActive={pathname.startsWith("/workspace/agents")}
+            isActive={pathname.startsWith("/workspace/token-usage")}
             asChild
           >
-            <Link className="text-muted-foreground" href="/workspace/agents">
-              <BotIcon />
-              <span>{t.sidebar.agents}</span>
+            <Link
+              className="text-muted-foreground"
+              href="/workspace/token-usage"
+            >
+              <BarChart3Icon />
+              <span>{t.sidebar.tokenUsage}</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

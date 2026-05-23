@@ -3,10 +3,32 @@ import { getBackendBaseURL } from "@/core/config";
 
 import type { Skill } from "./type";
 
+const HIDDEN_SKILL_NAMES = new Set([
+  "chart-visualization",
+  "claude-to-deerflow",
+  "code-documentation",
+  "data-analysis",
+  "find-skills",
+  "frontend-design",
+  "github-deep-research",
+  "image-generation",
+  "newsletter-generation",
+  "podcast-generation",
+  "ppt-generation",
+  "skill-creator",
+  "surprise-me",
+  "systematic-literature-review",
+  "vercel-deploy",
+  "video-generation",
+  "web-design-guidelines",
+]);
+
 export async function loadSkills() {
   const skills = await fetch(`${getBackendBaseURL()}/api/skills`);
   const json = await skills.json();
-  return json.skills as Skill[];
+  return (json.skills as Skill[]).filter(
+    (skill) => !HIDDEN_SKILL_NAMES.has(skill.name),
+  );
 }
 
 export async function enableSkill(skillName: string, enabled: boolean) {

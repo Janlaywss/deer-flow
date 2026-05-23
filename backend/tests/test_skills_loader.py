@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from deerflow.config.skills_config import SkillsConfig
+from deerflow.skills.policy import HIDDEN_SKILL_NAMES
 from deerflow.skills.storage import get_or_new_skill_storage
 
 
@@ -79,6 +80,24 @@ def test_load_skills_skips_hidden_directories(tmp_path: Path):
 
     assert "ok-skill" in names
     assert "secret-skill" not in names
+
+
+def test_load_skills_hides_product_disabled_builtin_skills(tmp_path: Path):
+    skills_root = tmp_path / "skills"
+    for skill_name in HIDDEN_SKILL_NAMES:
+        _write_skill(
+            skills_root / "public" / skill_name,
+            skill_name,
+            f"Hidden {skill_name}",
+        )
+
+    storage = get_or_new_skill_storage(skills_path=skills_root)
+
+    all_names = {skill.name for skill in storage.load_skills(enabled_only=False)}
+    enabled_names = {skill.name for skill in storage.load_skills(enabled_only=True)}
+
+    assert all_names.isdisjoint(HIDDEN_SKILL_NAMES)
+    assert enabled_names.isdisjoint(HIDDEN_SKILL_NAMES)
 
 
 def test_load_skills_prefers_custom_over_public_with_same_name(tmp_path: Path):
