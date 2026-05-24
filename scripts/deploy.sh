@@ -95,9 +95,12 @@ if [ -z "$DEER_FLOW_EXTENSIONS_CONFIG_PATH" ]; then
 fi
 
 if [ ! -f "$DEER_FLOW_EXTENSIONS_CONFIG_PATH" ]; then
-    if [ -f "$REPO_ROOT/extensions_config.json" ]; then
+    if [ -f "$REPO_ROOT/extensions_config.example.json" ]; then
+        cp "$REPO_ROOT/extensions_config.example.json" "$DEER_FLOW_EXTENSIONS_CONFIG_PATH"
+        echo -e "${GREEN}✓ Seeded extensions_config.json from example → $DEER_FLOW_EXTENSIONS_CONFIG_PATH${NC}"
+    elif [ "$DEER_FLOW_EXTENSIONS_CONFIG_PATH" != "$REPO_ROOT/extensions_config.json" ] && [ -f "$REPO_ROOT/extensions_config.json" ]; then
         cp "$REPO_ROOT/extensions_config.json" "$DEER_FLOW_EXTENSIONS_CONFIG_PATH"
-        echo -e "${GREEN}✓ Seeded extensions_config.json → $DEER_FLOW_EXTENSIONS_CONFIG_PATH${NC}"
+        echo -e "${GREEN}✓ Seeded extensions_config.json from repo root → $DEER_FLOW_EXTENSIONS_CONFIG_PATH${NC}"
     else
         # Create a minimal empty config so the gateway doesn't fail on startup
         echo '{"mcpServers":{},"skills":{}}' > "$DEER_FLOW_EXTENSIONS_CONFIG_PATH"

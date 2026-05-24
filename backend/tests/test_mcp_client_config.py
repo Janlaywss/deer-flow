@@ -1,12 +1,45 @@
 """Core behavior tests for MCP client server config building."""
 
+import os
+
 import pytest
 
 from deerflow.config.extensions_config import ExtensionsConfig, McpServerConfig
 from deerflow.mcp.client import build_server_params, build_servers_config
 
 
-def test_build_server_params_stdio_success():
+def _clear_stdio_inherited_env(monkeypatch):
+    for key in tuple(os.environ):
+        if key.startswith("UV_"):
+            monkeypatch.delenv(key, raising=False)
+    for key in (
+        "ALL_PROXY",
+        "CURL_CA_BUNDLE",
+        "HOME",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "LANG",
+        "LC_ALL",
+        "NO_PROXY",
+        "PATH",
+        "REQUESTS_CA_BUNDLE",
+        "SHELL",
+        "SSL_CERT_DIR",
+        "SSL_CERT_FILE",
+        "TEMP",
+        "TMP",
+        "TMPDIR",
+        "USER",
+        "all_proxy",
+        "http_proxy",
+        "https_proxy",
+        "no_proxy",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+
+def test_build_server_params_stdio_success(monkeypatch):
+    _clear_stdio_inherited_env(monkeypatch)
     config = McpServerConfig(
         type="stdio",
         command="npx",
@@ -22,6 +55,49 @@ def test_build_server_params_stdio_success():
         "args": ["-y", "my-mcp-server"],
         "env": {"API_KEY": "secret"},
     }
+
+
+def test_build_server_params_stdio_inherits_uv_runtime_env(monkeypatch):
+    _clear_stdio_inherited_env(monkeypatch)
+    monkeypatch.setenv("UV_INDEX_URL", "https://mirror.example/simple")
+    config = McpServerConfig(
+        type="stdio",
+        command="uvx",
+        args=["mcp-server"],
+        env={"API_KEY": "secret"},
+    )
+
+    params = build_server_params("uvx-server", config)
+
+    assert params["env"] == {
+        "UV_INDEX_URL": "https://mirror.example/simple",
+        "API_KEY": "secret",
+    }
+
+
+def test_build_server_params_stdio_config_env_overrides_inherited_env(monkeypatch):
+    _clear_stdio_inherited_env(monkeypatch)
+    monkeypatch.setenv("UV_INDEX_URL", "https://runtime.example/simple")
+    config = McpServerConfig(
+        type="stdio",
+        command="uvx",
+        args=["mcp-server"],
+        env={"UV_INDEX_URL": "https://config.example/simple"},
+    )
+
+    params = build_server_params("uvx-server", config)
+
+    assert params["env"]["UV_INDEX_URL"] == "https://config.example/simple"
+
+
+def test_build_server_params_stdio_omits_env_when_config_has_no_env(monkeypatch):
+    _clear_stdio_inherited_env(monkeypatch)
+    monkeypatch.setenv("UV_INDEX_URL", "https://mirror.example/simple")
+    config = McpServerConfig(type="stdio", command="uvx", args=["mcp-server"])
+
+    params = build_server_params("uvx-server", config)
+
+    assert "env" not in params
 
 
 def test_extensions_config_resolves_env_variables_inside_nested_collections(monkeypatch):

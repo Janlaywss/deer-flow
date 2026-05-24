@@ -10,6 +10,7 @@
         "exec uvx --from \"${MCP_KNOWLEDGEBASE_SERVER_PATH:-../mcp_servers/mcp_server_knowledgebase}\" mcp-server-knowledgebase"
       ],
       "env": {
+        "UV_INDEX_URL": "$UV_INDEX_URL",
         "MCP_KNOWLEDGEBASE_SERVER_PATH": "$MCP_KNOWLEDGEBASE_SERVER_PATH",
         "VOLCENGINE_ACCESS_KEY": "$VOLCENGINE_ACCESS_KEY",
         "VOLCENGINE_SECRET_KEY": "$VOLCENGINE_SECRET_KEY",

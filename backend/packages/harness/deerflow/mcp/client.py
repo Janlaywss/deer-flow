@@ -1,11 +1,51 @@
 """MCP client using langchain-mcp-adapters."""
 
 import logging
+import os
 from typing import Any
 
 from deerflow.config.extensions_config import ExtensionsConfig, McpServerConfig
 
 logger = logging.getLogger(__name__)
+
+MCP_STDIO_ENV_INHERIT_PREFIXES = ("UV_",)
+MCP_STDIO_ENV_INHERIT_NAMES = {
+    "ALL_PROXY",
+    "CURL_CA_BUNDLE",
+    "HOME",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "LANG",
+    "LC_ALL",
+    "NO_PROXY",
+    "PATH",
+    "REQUESTS_CA_BUNDLE",
+    "SHELL",
+    "SSL_CERT_DIR",
+    "SSL_CERT_FILE",
+    "TEMP",
+    "TMP",
+    "TMPDIR",
+    "USER",
+    "all_proxy",
+    "http_proxy",
+    "https_proxy",
+    "no_proxy",
+}
+
+
+def _build_stdio_env(config_env: dict[str, str]) -> dict[str, str]:
+    """Build a constrained environment for stdio MCP child processes.
+
+    Stdio MCP launchers such as uvx often need package-index, proxy, and
+    certificate variables from the gateway runtime. When an MCP config provides
+    any explicit env mapping, langchain-mcp-adapters treats it as the child
+    process env, so keep the inheritance limited to runtime plumbing and let the
+    MCP config override it.
+    """
+    env = {key: value for key, value in os.environ.items() if key in MCP_STDIO_ENV_INHERIT_NAMES or key.startswith(MCP_STDIO_ENV_INHERIT_PREFIXES)}
+    env.update(config_env)
+    return env
 
 
 def build_server_params(server_name: str, config: McpServerConfig) -> dict[str, Any]:
@@ -28,7 +68,7 @@ def build_server_params(server_name: str, config: McpServerConfig) -> dict[str, 
         params["args"] = config.args
         # Add environment variables if present
         if config.env:
-            params["env"] = config.env
+            params["env"] = _build_stdio_env(config.env)
     elif transport_type in ("sse", "http"):
         if not config.url:
             raise ValueError(f"MCP server '{server_name}' with {transport_type} transport requires 'url' field")
