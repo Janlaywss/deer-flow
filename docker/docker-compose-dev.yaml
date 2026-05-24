@@ -83,12 +83,12 @@ services:
       - deer-flow-dev
     restart: unless-stopped
 
-  # Frontend - Next.js Development Server
+  # Frontend - Next.js production build served locally
   frontend:
     build:
       context: ../
       dockerfile: frontend/Dockerfile
-      target: dev
+      target: prod
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
         NPM_REGISTRY: ${NPM_REGISTRY:-}
@@ -96,18 +96,12 @@ services:
         NEXT_PUBLIC_LANGGRAPH_BASE_URL: ${NEXT_PUBLIC_LANGGRAPH_BASE_URL:-}
         NEXT_PUBLIC_STATIC_WEBSITE_ONLY: ${NEXT_PUBLIC_STATIC_WEBSITE_ONLY:-}
     container_name: deer-flow-frontend
-    command: sh -c "cd frontend && pnpm run dev > /app/logs/frontend.log 2>&1"
+    command: sh -c "cd frontend && pnpm start > /app/logs/frontend.log 2>&1"
     volumes:
-      - ../frontend/src:/app/frontend/src
-      - ../frontend/public:/app/frontend/public
-      - ../frontend/next.config.js:/app/frontend/next.config.js:ro
       - ../logs:/app/logs
-      # Mount pnpm store for caching
-      - ${PNPM_STORE_PATH:-~/.local/share/pnpm/store}:/root/.local/share/pnpm/store
     working_dir: /app
     environment:
-      - NODE_ENV=development
-      - WATCHPACK_POLLING=true
+      - NODE_ENV=production
       - CI=true
       - DEER_FLOW_INTERNAL_GATEWAY_BASE_URL=http://gateway:8001
       - NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL:-}
@@ -146,6 +140,7 @@ services:
       - gateway-venv:/app/backend/.venv
       - ../config.yaml:/app/config.yaml
       - ../extensions_config.json:/app/extensions_config.json
+      - ../mcp_servers:/app/mcp_servers:ro
       - ../skills:/app/skills
       - ../logs:/app/logs
       # Use a Docker-managed uv cache volume instead of a host bind mount.
@@ -177,6 +172,7 @@ services:
       - DEER_FLOW_HOST_BASE_DIR=${DEER_FLOW_ROOT}/backend/.deer-flow
       - DEER_FLOW_HOST_SKILLS_PATH=${DEER_FLOW_ROOT}/skills
       - DEER_FLOW_SANDBOX_HOST=host.docker.internal
+      - MCP_KNOWLEDGEBASE_SERVER_PATH=/app/mcp_servers/mcp_server_knowledgebase
     env_file:
       - ../.env
     extra_hosts:

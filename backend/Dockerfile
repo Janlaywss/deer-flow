@@ -44,6 +44,7 @@ WORKDIR /app
 
 # Copy backend source code
 COPY backend ./backend
+COPY mcp_servers ./mcp_servers
 
 # Install dependencies with cache mount
 # When UV_EXTRAS is set (e.g. "postgres"), installs optional dependencies.
@@ -93,6 +94,7 @@ WORKDIR /app
 
 # Copy backend with pre-built virtualenv from builder
 COPY --from=builder /app/backend ./backend
+COPY --from=builder /app/mcp_servers ./mcp_servers
 
 # Expose ports (gateway: 8001, langgraph: 2024)
 EXPOSE 8001 2024

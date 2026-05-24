@@ -13,6 +13,9 @@ test.describe("Sidebar navigation", () => {
     await expect(sidebar.locator("a[href='/workspace/chats']")).toBeVisible({
       timeout: 15_000,
     });
+    await expect(
+      sidebar.locator("a[href='/workspace/knowledge']"),
+    ).toBeVisible();
     await expect(sidebar.locator("a[href='/workspace/agents']")).toBeVisible();
   });
 

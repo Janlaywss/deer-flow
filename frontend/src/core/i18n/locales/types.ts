@@ -113,6 +113,7 @@ export interface Translations {
     demoChats: string;
     agents: string;
     userManagement: string;
+    knowledgeBase: string;
     tokenUsage: string;
   };
 
@@ -188,6 +189,67 @@ export interface Translations {
     updateErrorTitle: string;
     updateErrorDescription: string;
     currentAccount: string;
+  };
+
+  // Knowledge base
+  knowledge: {
+    title: string;
+    description: string;
+    refresh: string;
+    upload: string;
+    uploading: string;
+    uploadSuccess: string;
+    deleteSuccess: string;
+    selectCollection: string;
+    docCount: (count: number) => string;
+    docName: string;
+    docNamePlaceholder: string;
+    docNameValidationHint: string;
+    docNameValidationError: string;
+    docType: string;
+    docStatus: string;
+    docStatusReady: string;
+    docStatusQueued: string;
+    docStatusUpdating: string;
+    docStatusDeleting: string;
+    docStatusProcessing: string;
+    docStatusFailed: string;
+    docStatusUnknown: string;
+    docIdOptional: string;
+    docIdPlaceholder: string;
+    file: string;
+    fileValidationHint: string;
+    fileValidationError: string;
+    fileSize: string;
+    points: string;
+    summary: string;
+    source: string;
+    viewDetails: string;
+    docDetails: string;
+    descriptionOptional: string;
+    descriptionPlaceholder: string;
+    maxUploadSize: (size: string) => string;
+    uploadDescription: (collection: string) => string;
+    deleteConfirm: (name: string) => string;
+    accessDeniedTitle: string;
+    accessDeniedDescription: string;
+    unavailableTitle: string;
+    notConfiguredTitle: string;
+    notConfiguredDescription: string;
+    uploadNotConfiguredTitle: string;
+    uploadNotConfiguredDescription: string;
+    configLoadErrorTitle: string;
+    configLoadErrorDescription: string;
+    loadCollectionsErrorTitle: string;
+    loadCollectionsErrorDescription: string;
+    loadDocsErrorTitle: string;
+    loadDocsErrorDescription: string;
+    loadDocErrorTitle: string;
+    loadDocErrorDescription: string;
+    emptyCollectionsTitle: string;
+    emptyCollectionsDescription: string;
+    emptyDocsTitle: string;
+    emptyDocsDescription: string;
   };
 
   // Token usage dashboard

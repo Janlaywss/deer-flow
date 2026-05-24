@@ -1,6 +1,11 @@
 "use client";
 
-import { BarChart3Icon, MessagesSquare, UsersIcon } from "lucide-react";
+import {
+  BarChart3Icon,
+  DatabaseIcon,
+  MessagesSquare,
+  UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -33,17 +38,33 @@ export function WorkspaceNavChatList() {
           </SidebarMenuButton>
         </SidebarMenuItem>
         {showUserManagement && (
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              isActive={pathname.startsWith("/workspace/users")}
-              asChild
-            >
-              <Link className="text-muted-foreground" href="/workspace/users">
-                <UsersIcon />
-                <span>{t.sidebar.userManagement}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          <>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={pathname.startsWith("/workspace/users")}
+                asChild
+              >
+                <Link className="text-muted-foreground" href="/workspace/users">
+                  <UsersIcon />
+                  <span>{t.sidebar.userManagement}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={pathname.startsWith("/workspace/knowledge")}
+                asChild
+              >
+                <Link
+                  className="text-muted-foreground"
+                  href="/workspace/knowledge"
+                >
+                  <DatabaseIcon />
+                  <span>{t.sidebar.knowledgeBase}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </>
         )}
         <SidebarMenuItem>
           <SidebarMenuButton

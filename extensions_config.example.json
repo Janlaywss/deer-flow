@@ -1,8 +1,28 @@
 {
-  "mcpInterceptors": [
-    "my_package.mcp.auth:build_auth_interceptor"
-  ],
+  "mcpInterceptors": [],
   "mcpServers": {
+    "knowledgebase": {
+      "enabled": true,
+      "type": "stdio",
+      "command": "sh",
+      "args": [
+        "-lc",
+        "exec uvx --from \"${MCP_KNOWLEDGEBASE_SERVER_PATH:-../mcp_servers/mcp_server_knowledgebase}\" mcp-server-knowledgebase"
+      ],
+      "env": {
+        "MCP_KNOWLEDGEBASE_SERVER_PATH": "$MCP_KNOWLEDGEBASE_SERVER_PATH",
+        "VOLCENGINE_ACCESS_KEY": "$VOLCENGINE_ACCESS_KEY",
+        "VOLCENGINE_SECRET_KEY": "$VOLCENGINE_SECRET_KEY",
+        "VOLCENGINE_ACCESS_KEY_ID": "$VOLCENGINE_ACCESS_KEY_ID",
+        "VOLCENGINE_SECRET_ACCESS_KEY": "$VOLCENGINE_SECRET_ACCESS_KEY",
+        "VIKINGDB_ACCESS_KEY_ID": "$VIKINGDB_ACCESS_KEY_ID",
+        "VIKINGDB_SECRET_ACCESS_KEY": "$VIKINGDB_SECRET_ACCESS_KEY",
+        "KNOWLEDGE_BASE_PROJECT": "$KNOWLEDGE_BASE_PROJECT",
+        "VIKINGDB_PROJECT": "$VIKINGDB_PROJECT",
+        "KNOWLEDGE_BASE_REGION": "$KNOWLEDGE_BASE_REGION"
+      },
+      "description": "Volcengine Viking Knowledge Base MCP server"
+    },
     "github": {
       "enabled": false,
       "type": "stdio",

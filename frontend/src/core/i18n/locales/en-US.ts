@@ -121,6 +121,7 @@ export const enUS: Translations = {
     demoChats: "Demo chats",
     agents: "Agents",
     userManagement: "User management",
+    knowledgeBase: "Knowledge base",
     tokenUsage: "Token dashboard",
   },
 
@@ -211,6 +212,75 @@ export const enUS: Translations = {
     updateErrorTitle: "Could not update account status",
     updateErrorDescription: "Please try again later.",
     currentAccount: "Current account",
+  },
+
+  // Knowledge base
+  knowledge: {
+    title: "Knowledge base",
+    description: "Manage files in Viking knowledge bases.",
+    refresh: "Refresh",
+    upload: "Upload",
+    uploading: "Uploading...",
+    uploadSuccess: "Knowledge upload submitted",
+    deleteSuccess: "Knowledge deleted",
+    selectCollection: "Select knowledge base",
+    docCount: (count: number) =>
+      `${count} knowledge item${count === 1 ? "" : "s"}`,
+    docName: "Knowledge name",
+    docNamePlaceholder: "Defaults to the file name",
+    docNameValidationHint:
+      "Use Chinese characters, letters, numbers, underscores, hyphens, and periods only. Spaces and special characters are not allowed.",
+    docNameValidationError:
+      "Knowledge name cannot contain spaces or special characters. Use Chinese characters, letters, numbers, underscores, hyphens, and periods only.",
+    docType: "Type",
+    docStatus: "Document status",
+    docStatusReady: "Ready",
+    docStatusQueued: "Queued",
+    docStatusUpdating: "Updating",
+    docStatusDeleting: "Deleting",
+    docStatusProcessing: "Processing",
+    docStatusFailed: "Failed",
+    docStatusUnknown: "Unknown",
+    docIdOptional: "Knowledge ID (optional)",
+    docIdPlaceholder:
+      "Leave blank to auto-generate; letters, numbers, underscore",
+    file: "File",
+    fileValidationHint: "PDF files only.",
+    fileValidationError: "Knowledge base uploads only support PDF files.",
+    fileSize: "File size",
+    points: "Chunks",
+    summary: "Summary",
+    source: "Source",
+    viewDetails: "View details",
+    docDetails: "Knowledge details",
+    descriptionOptional: "Description (optional)",
+    descriptionPlaceholder: "Add a knowledge note",
+    maxUploadSize: (size: string) => `Max ${size}`,
+    uploadDescription: (collection: string) => `Upload a file to ${collection}`,
+    deleteConfirm: (name: string) =>
+      `Delete knowledge item "${name}"? This cannot be undone.`,
+    accessDeniedTitle: "Admin access required",
+    accessDeniedDescription:
+      "Only DeerFlow administrators can view knowledge bases.",
+    unavailableTitle: "Knowledge base unavailable",
+    notConfiguredTitle: "Viking knowledge base is not configured",
+    notConfiguredDescription:
+      "Set VIKINGDB_API_KEY, or set both VIKINGDB_ACCESS_KEY_ID and VIKINGDB_SECRET_ACCESS_KEY in the backend environment.",
+    uploadNotConfiguredTitle: "File upload is not configured",
+    uploadNotConfiguredDescription:
+      "Local file upload requires VIKINGDB_TOS_BUCKET plus VIKINGDB_ACCESS_KEY_ID and VIKINGDB_SECRET_ACCESS_KEY.",
+    configLoadErrorTitle: "Could not load knowledge configuration",
+    configLoadErrorDescription: "Please refresh the page or try again later.",
+    loadCollectionsErrorTitle: "Could not load knowledge bases",
+    loadCollectionsErrorDescription: "Please check the Viking configuration.",
+    loadDocsErrorTitle: "Could not load knowledge",
+    loadDocsErrorDescription: "Please refresh the page or try again later.",
+    loadDocErrorTitle: "Could not load knowledge details",
+    loadDocErrorDescription: "Please try again later.",
+    emptyCollectionsTitle: "No knowledge bases",
+    emptyCollectionsDescription: "Viking knowledge bases will appear here.",
+    emptyDocsTitle: "No knowledge yet",
+    emptyDocsDescription: "Uploaded files will appear here.",
   },
 
   // Token Usage Dashboard
