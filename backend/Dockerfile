@@ -3,9 +3,9 @@
 # Stage 2 (dev):     retains toolchain for dev containers (uv sync at startup)
 # Stage 3 (runtime): clean image without compiler toolchain for production
 
-# UV source image (override for restricted networks that cannot reach ghcr.io)
-ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.7.20
-FROM ${UV_IMAGE} AS uv-source
+# uv version installed from PyPI. Installing via pip keeps container builds
+# workable in networks where ghcr.io layers are slow or unavailable.
+ARG UV_VERSION=0.7.20
 
 # ── Stage 1: Builder ──────────────────────────────────────────────────────────
 FROM python:3.12-slim-bookworm AS builder
@@ -13,6 +13,7 @@ FROM python:3.12-slim-bookworm AS builder
 ARG NODE_MAJOR=22
 ARG APT_MIRROR
 ARG UV_INDEX_URL
+ARG UV_VERSION
 # Optional extras to install (e.g. "postgres" for PostgreSQL support)
 # Usage: docker build --build-arg UV_EXTRAS=postgres ...
 ARG UV_EXTRAS
@@ -36,8 +37,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv (source image overridable via UV_IMAGE build arg)
-COPY --from=uv-source /uv /uvx /usr/local/bin/
+# Install uv from PyPI so restricted-network builds can use UV_INDEX_URL mirrors.
+RUN python -m pip install --no-cache-dir \
+    --index-url "${UV_INDEX_URL:-https://pypi.org/simple}" \
+    "uv==${UV_VERSION}"
 
 # Set working directory
 WORKDIR /app
@@ -73,6 +76,9 @@ CMD ["sh", "-c", "cd backend && PYTHONPATH=. uv run uvicorn app.gateway.app:app 
 # Clean image without build-essential — reduces size (~200 MB) and attack surface.
 FROM python:3.12-slim-bookworm
 
+ARG UV_INDEX_URL
+ARG UV_VERSION
+
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=utf-8
@@ -86,8 +92,10 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/bin/npm \
 # Install Docker CLI (for DooD: allows starting sandbox containers via host Docker socket)
 COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker
 
-# Install uv (source image overridable via UV_IMAGE build arg)
-COPY --from=uv-source /uv /uvx /usr/local/bin/
+# Install uv from PyPI so runtime image builds do not depend on ghcr.io.
+RUN python -m pip install --no-cache-dir \
+    --index-url "${UV_INDEX_URL:-https://pypi.org/simple}" \
+    "uv==${UV_VERSION}"
 
 # Set working directory
 WORKDIR /app
