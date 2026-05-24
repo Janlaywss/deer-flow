@@ -92,6 +92,9 @@ services:
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
         NPM_REGISTRY: ${NPM_REGISTRY:-}
+        NEXT_PUBLIC_BACKEND_BASE_URL: ${NEXT_PUBLIC_BACKEND_BASE_URL:-}
+        NEXT_PUBLIC_LANGGRAPH_BASE_URL: ${NEXT_PUBLIC_LANGGRAPH_BASE_URL:-}
+        NEXT_PUBLIC_STATIC_WEBSITE_ONLY: ${NEXT_PUBLIC_STATIC_WEBSITE_ONLY:-}
     container_name: deer-flow-frontend
     command: sh -c "cd frontend && pnpm run dev > /app/logs/frontend.log 2>&1"
     volumes:
@@ -107,6 +110,9 @@ services:
       - WATCHPACK_POLLING=true
       - CI=true
       - DEER_FLOW_INTERNAL_GATEWAY_BASE_URL=http://gateway:8001
+      - NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL:-}
+      - NEXT_PUBLIC_LANGGRAPH_BASE_URL=${NEXT_PUBLIC_LANGGRAPH_BASE_URL:-}
+      - NEXT_PUBLIC_STATIC_WEBSITE_ONLY=${NEXT_PUBLIC_STATIC_WEBSITE_ONLY:-}
     env_file:
       - ../frontend/.env
     networks:

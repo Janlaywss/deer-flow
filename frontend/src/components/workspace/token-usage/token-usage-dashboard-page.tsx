@@ -49,10 +49,98 @@ function getModelColor(index: number): string {
   return MODEL_COLORS[index % MODEL_COLORS.length]!;
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function parsePercentOrNumber(value: string, percentScale = 1): number | null {
+  const trimmed = value.trim();
+  const number = Number.parseFloat(trimmed);
+  if (!Number.isFinite(number)) return null;
+  return trimmed.endsWith("%") ? (number / 100) * percentScale : number;
+}
+
+function parseHue(value: string): number | null {
+  const trimmed = value.trim();
+  const number = Number.parseFloat(trimmed);
+  if (!Number.isFinite(number)) return null;
+  if (trimmed.endsWith("turn")) return number * 360;
+  if (trimmed.endsWith("rad")) return (number * 180) / Math.PI;
+  if (trimmed.endsWith("grad")) return number * 0.9;
+  return number;
+}
+
+function linearSrgbToByte(value: number): number {
+  const srgb =
+    value <= 0.0031308
+      ? value * 12.92
+      : 1.055 * Math.pow(value, 1 / 2.4) - 0.055;
+  return Math.round(clamp(srgb, 0, 1) * 255);
+}
+
+function oklchToRgb(color: string): string | null {
+  const match = /^oklch\((.*)\)$/i.exec(color.trim());
+  if (!match) return null;
+
+  const [channels = "", alphaChannel] = match[1]!.split("/");
+  const [lightnessChannel, chromaChannel, hueChannel] = channels
+    .trim()
+    .split(/\s+/);
+  if (!lightnessChannel || !chromaChannel || !hueChannel) return null;
+
+  const lightness = parsePercentOrNumber(lightnessChannel);
+  const chroma = parsePercentOrNumber(chromaChannel, 0.4);
+  const hue = parseHue(hueChannel);
+  const alpha = alphaChannel
+    ? parsePercentOrNumber(alphaChannel)
+    : undefined;
+  if (
+    lightness === null ||
+    chroma === null ||
+    hue === null ||
+    alpha === null
+  ) {
+    return null;
+  }
+
+  const hueRadians = (hue * Math.PI) / 180;
+  const a = chroma * Math.cos(hueRadians);
+  const b = chroma * Math.sin(hueRadians);
+
+  const lPrime = lightness + 0.3963377774 * a + 0.2158037573 * b;
+  const mPrime = lightness - 0.1055613458 * a - 0.0638541728 * b;
+  const sPrime = lightness - 0.0894841775 * a - 1.291485548 * b;
+
+  const l = lPrime ** 3;
+  const m = mPrime ** 3;
+  const s = sPrime ** 3;
+
+  const red = linearSrgbToByte(
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+  );
+  const green = linearSrgbToByte(
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+  );
+  const blue = linearSrgbToByte(
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  );
+
+  if (alpha === undefined || alpha >= 1) {
+    return `rgb(${red}, ${green}, ${blue})`;
+  }
+  return `rgba(${red}, ${green}, ${blue}, ${clamp(alpha, 0, 1)})`;
+}
+
+function normalizeEchartsColor(color: string): string {
+  return oklchToRgb(color) ?? color;
+}
+
 function resolveThemeColor(element: HTMLElement, color: string): string {
   const match = /^var\((--[^,)]+)(?:,[^)]+)?\)$/.exec(color.trim());
-  if (!match) return color;
-  return getComputedStyle(element).getPropertyValue(match[1]!).trim() || color;
+  if (!match) return normalizeEchartsColor(color);
+  const computedColor =
+    getComputedStyle(element).getPropertyValue(match[1]!).trim() || color;
+  return normalizeEchartsColor(computedColor);
 }
 
 function escapeHtml(value: string): string {

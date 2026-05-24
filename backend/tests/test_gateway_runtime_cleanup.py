@@ -53,6 +53,39 @@ def test_nginx_routes_official_langgraph_prefix_to_gateway_api():
         assert "proxy_pass http://gateway" in content or "proxy_pass http://$gateway_upstream" in content
 
 
+def test_nginx_routes_token_usage_dashboard_to_gateway_api():
+    for path in ("docker/nginx/nginx.local.conf", "docker/nginx/nginx.conf"):
+        content = _read(path)
+        block = re.search(
+            r"location /api/token-usage \{(?P<body>.*?)\n        \}",
+            content,
+            re.S,
+        )
+
+        assert block is not None, path
+        assert (
+            "proxy_pass http://gateway" in block["body"]
+            or "proxy_pass http://$gateway_upstream" in block["body"]
+        )
+
+
+def test_docker_frontend_defaults_public_api_urls_to_same_origin():
+    dockerfile = _read("frontend/Dockerfile")
+
+    assert "ARG NEXT_PUBLIC_BACKEND_BASE_URL=" in dockerfile
+    assert "ARG NEXT_PUBLIC_LANGGRAPH_BASE_URL=" in dockerfile
+    assert "ENV NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL}" in dockerfile
+    assert "ENV NEXT_PUBLIC_LANGGRAPH_BASE_URL=${NEXT_PUBLIC_LANGGRAPH_BASE_URL}" in dockerfile
+
+    for path in ("docker/docker-compose-dev.yaml", "docker/docker-compose.yaml"):
+        content = _read(path)
+
+        assert "NEXT_PUBLIC_BACKEND_BASE_URL: ${NEXT_PUBLIC_BACKEND_BASE_URL:-}" in content
+        assert "NEXT_PUBLIC_LANGGRAPH_BASE_URL: ${NEXT_PUBLIC_LANGGRAPH_BASE_URL:-}" in content
+        assert "- NEXT_PUBLIC_BACKEND_BASE_URL=${NEXT_PUBLIC_BACKEND_BASE_URL:-}" in content
+        assert "- NEXT_PUBLIC_LANGGRAPH_BASE_URL=${NEXT_PUBLIC_LANGGRAPH_BASE_URL:-}" in content
+
+
 def test_nginx_defers_cors_to_gateway_allowlist():
     for path in ("docker/nginx/nginx.local.conf", "docker/nginx/nginx.conf"):
         content = _read(path)
